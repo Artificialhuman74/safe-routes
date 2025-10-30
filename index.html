@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bangalore Safe Route Planner</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Dark mode variables */
+        [data-theme="dark"] {
+            --bg-gradient-start: #0f172a;
+            --bg-gradient-end: #1e1b4b;
+            --sidebar-bg: rgba(15, 23, 42, 0.95);
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(30, 41, 59, 0.6);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Light mode variables */
+        [data-theme="light"] {
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --sidebar-bg: rgba(255, 255, 255, 0.95);
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: rgba(255, 255, 255, 0.5);
+            --input-bg: rgba(255, 255, 255, 0.8);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            overflow: hidden;
+            transition: background 0.5s ease;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.2) 0%, transparent 50%);
+            animation: gradientShift 15s ease infinite;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        [data-theme="light"] body::before {
+            opacity: 1;
+        }
+        
+        [data-theme="dark"] body::before {
+            opacity: 0.3;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .sidebar {
+            width: 380px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            padding: 25px;
+            box-shadow: 
+                0 20px 60px var(--shadow-color),
+                0 0 0 1px var(--border-color) inset;
+            overflow-y: auto;
+            position: relative;
+            z-index: 1000;
+            animation: slideInLeft 0.5s ease-out;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 10px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary) 100%);
+        }
+        
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--border-color);
+            box-shadow: 0 8px 24px var(--shadow-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000;
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 12px 32px var(--shadow-color);
+        }
+        
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        h1 {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 25px;
+            font-weight: 400;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--card-bg);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            text-transform: none;
+            letter-spacing: 0.3px;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn:active {
+            transform: scale(0.97);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn-danger:hover {
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .btn:disabled:hover {
+            transform: none;
+        }
+        
+        .status {
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-top: 15px;
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideDown 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-10px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .status.success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border-left: 4px solid var(--success);
+        }
+        
+        .status.error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border-left: 4px solid var(--danger);
+        }
+        
+        .status.info {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .routes-container {
+            margin-top: 20px;
+        }
+        
+        .route-card {
+            background: var(--card-bg);
+            padding: 18px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            animation: fadeInUp 0.4s ease-out;
+            animation-fill-mode: both;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .route-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px var(--shadow-color);
+            border-color: var(--primary);
+        }
+        
+        .route-card.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
+            transform: translateY(-4px);
+        }
+        
+        [data-theme="dark"] .route-card.selected {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+        }
+        
+        .route-card.safest {
+            border-left: 5px solid var(--success);
+            background: linear-gradient(to right, rgba(16, 185, 129, 0.1) 0%, var(--card-bg) 10%);
+        }
+        
+        .route-card.moderate {
+            border-left: 5px solid var(--warning);
+            background: linear-gradient(to right, rgba(245, 158, 11, 0.1) 0%, var(--card-bg) 10%);
+        }
+        
+        .route-card.caution {
+            border-left: 5px solid var(--danger);
+            background: linear-gradient(to right, rgba(239, 68, 68, 0.1) 0%, var(--card-bg) 10%);
+        }
+        
+        .route-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 16px;
+        }
+        
+        .safety-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .badge-safe {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
+        }
+        
+        .badge-moderate {
+            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+            color: white;
+        }
+        
+        .badge-caution {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+        }
+        
+        .route-score {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+        }
+        
+        .route-score strong {
+            color: var(--text-primary);
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .instructions {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: var(--text-primary);
+            border-left: 4px solid var(--warning);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        [data-theme="dark"] .instructions {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.15) 100%);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.95; }
+        }
+        
+        .instructions strong {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .heatmap-legend {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 10px;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .legend-section {
+            margin-bottom: 12px;
+        }
+        
+        .legend-color {
+            width: 24px;
+            height: 16px;
+            margin-right: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .saved-locations {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .saved-loc-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--sidebar-bg);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .saved-loc-item:hover {
+            transform: translateX(4px);
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        [data-theme="light"] .saved-loc-item:hover {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        }
+        
+        [data-theme="dark"] .saved-loc-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .saved-loc-name {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .saved-loc-coords {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .preferences-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .checkbox-group {
+            margin-bottom: 12px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            accent-color: var(--primary);
+        }
+        
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        
+        .checkbox-group label:hover {
+            color: var(--primary);
+        }
+        
+        .rating-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .rating-modal.active {
+            display: flex;
+        }
+        
+        .rating-content {
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            padding: 35px;
+            border-radius: 24px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 
+                0 25px 50px var(--shadow-color),
+                0 0 0 1px var(--border-color) inset;
+            animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .rating-content h3 {
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 24px;
+        }
+        
+        .rating-content label {
+            color: var(--text-primary);
+        }
+        
+        .rating-content p {
+            color: var(--text-secondary);
+        }
+        
+        .star-rating {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 24px 0;
+            font-size: 45px;
+        }
+        
+        .star {
+            cursor: pointer;
+            color: #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+        
+        .star:hover {
+            color: #fbbf24;
+            transform: scale(1.2);
+        }
+        
+        .star.active {
+            color: #f59e0b;
+            transform: scale(1.1);
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 14px;
+            margin-top: 10px;
+            min-height: 80px;
+            resize: vertical;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            background: var(--card-bg);
+        }
+        
+        textarea::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" title="Toggle theme">
+        <span id="themeIcon">🌙</span>
+    </button>
+    
+    <div class="container">
+        <div class="sidebar">
+            <h1>🛡️ Safe Route Planner</h1>
+            <p class="subtitle">Find the safest routes in Bangalore</p>
+            
+            <div class="instructions">
+                <strong>How to use:</strong>
+                1. Click "📍 Use My Current Location" or click map to set points<br>
+                2. Toggle heatmaps to see crime, lighting, or population data<br>
+                3. Click "Find Safe Routes" to generate 5 safe routes
+            </div>
+            
+            <div class="saved-locations">
+                <strong style="display: block; margin-bottom: 10px; font-size: 16px; color: var(--text-primary);">🏠 Saved Locations</strong>
+                <div id="savedLocationsList"></div>
+                <button class="btn btn-secondary" onclick="openSaveLocationModal()" style="margin-top: 10px; font-size: 14px; padding: 8px;">
+                    + Add Location
+                </button>
+            </div>
+            
+            <div class="preferences-section">
+                <strong style="display: block; margin-bottom: 10px; font-size: 16px; color: var(--text-primary);">⚙️ Route Preferences</strong>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="preferMainRoads">
+                        Prefer Main Roads
+                    </label>
+                </div>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="preferWellLit">
+                        Prefer Well-Lit Areas
+                    </label>
+                </div>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="preferPopulated">
+                        Prefer Populated Areas
+                    </label>
+                </div>
+            </div>
+            
+            <div class="preferences-section">
+                <strong style="display: block; margin-bottom: 10px; font-size: 16px; color: var(--text-primary);">🗺️ Map Overlays</strong>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="showCrimeHeatmap" onchange="toggleCrimeHeatmap()">
+                        Show Crime Heatmap
+                    </label>
+                </div>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="showLightingHeatmap" onchange="toggleLightingHeatmap()">
+                        Show Lighting Heatmap
+                    </label>
+                </div>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="showPopulationHeatmap" onchange="togglePopulationHeatmap()">
+                        Show Population Density
+                    </label>
+                </div>
+            </div>
+            
+            <div class="heatmap-legend">
+                <div class="legend-title">Heatmap Legends</div>
+                <div class="legend-section">
+                    <strong style="font-size: 12px; color: #333;">Crime:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00ff00;"></div>
+                        <span>Low</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff0000;"></div>
+                        <span>High</span>
+                    </div>
+                </div>
+                <div class="legend-section">
+                    <strong style="font-size: 12px; color: #333;">Lighting:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #0000ff;"></div>
+                        <span>Dark</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffff00;"></div>
+                        <span>Well-Lit</span>
+                    </div>
+                </div>
+                <div class="legend-section">
+                    <strong style="font-size: 12px; color: #333;">Population:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff00ff;"></div>
+                        <span>Low</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00ffff;"></div>
+                        <span>High</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="useCurrentLocation()" id="currentLocationBtn">
+                📍 Use My Current Location
+            </button>
+            
+            <div class="input-group">
+                <label>Start Point (Green Marker)</label>
+                <input type="text" id="startLat" placeholder="Latitude" readonly>
+                <input type="text" id="startLon" placeholder="Longitude" readonly>
+            </div>
+            
+            <div class="input-group">
+                <label>End Point (Red Marker)</label>
+                <input type="text" id="endLat" placeholder="Latitude" readonly>
+                <input type="text" id="endLon" placeholder="Longitude" readonly>
+            </div>
+            
+            <button class="btn btn-primary" onclick="findRoutes()" id="findRoutesBtn">
+                Find Safe Routes
+            </button>
+            
+            <button class="btn btn-danger" onclick="clearAll()" style="margin-top: 5px;">
+                Clear All
+            </button>
+            
+            <div id="status"></div>
+            
+            <div id="routesContainer" class="routes-container"></div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+    
+    <!-- Save Location Modal -->
+    <div id="saveLocationModal" class="rating-modal">
+        <div class="rating-content">
+            <h3 style="margin-bottom: 15px;">Save Location</h3>
+            <label>Location Name</label>
+            <input type="text" id="locationName" placeholder="e.g., Home, Work" style="margin-bottom: 15px;">
+            <label>Type</label>
+            <select id="locationType" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px;">
+                <option value="home">Home</option>
+                <option value="work">Work</option>
+                <option value="other">Other</option>
+            </select>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="saveLocation()" style="flex: 1; font-size: 14px; padding: 10px;">Save</button>
+                <button class="btn btn-secondary" onclick="closeSaveLocationModal()" style="flex: 1; font-size: 14px; padding: 10px; background: #6c757d;">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rating Modal -->
+    <div id="ratingModal" class="rating-modal">
+        <div class="rating-content">
+            <h3 style="margin-bottom: 15px;">Rate Your Route</h3>
+            <p style="text-align: center; color: #666; margin-bottom: 10px;">How was your experience?</p>
+            <div class="star-rating">
+                <span class="star" onclick="setRating(1)">☆</span>
+                <span class="star" onclick="setRating(2)">☆</span>
+                <span class="star" onclick="setRating(3)">☆</span>
+                <span class="star" onclick="setRating(4)">☆</span>
+                <span class="star" onclick="setRating(5)">☆</span>
+            </div>
+            <label>Feedback (optional)</label>
+            <textarea id="routeFeedback" placeholder="Share your experience..."></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-primary" onclick="submitRating()" style="flex: 1; font-size: 14px; padding: 10px;">Submit</button>
+                <button class="btn btn-secondary" onclick="closeRatingModal()" style="flex: 1; font-size: 14px; padding: 10px; background: #6c757d;">Skip</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script>
+        const BACKEND_URL = 'http://localhost:5000';
+        
+        // Initialize map centered on Bangalore
+        const map = L.map('map').setView([12.9716, 77.5946], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        let startMarker, endMarker;
+        let clickCount = 0;
+        let crimeHeatLayer = null;
+        let lightingHeatLayer = null;
+        let populationHeatLayer = null;
+        let routeLayers = [];
+        let currentLocationMarker = null;
+        
+        // Handle map clicks to set start/end points
+        map.on('click', function(e) {
+            const lat = e.latlng.lat.toFixed(4);
+            const lon = e.latlng.lng.toFixed(4);
+            
+            if (clickCount === 0) {
+                // Set start point
+                if (startMarker) map.removeLayer(startMarker);
+                startMarker = L.marker([lat, lon], {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34]
+                    })
+                }).addTo(map).bindPopup('Start Point').openPopup();
+                
+                document.getElementById('startLat').value = lat;
+                document.getElementById('startLon').value = lon;
+                clickCount = 1;
+                showStatus('Start point set. Click again for end point.', 'info');
+            } else {
+                // Set end point
+                if (endMarker) map.removeLayer(endMarker);
+                endMarker = L.marker([lat, lon], {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34]
+                    })
+                }).addTo(map).bindPopup('End Point').openPopup();
+                
+                document.getElementById('endLat').value = lat;
+                document.getElementById('endLon').value = lon;
+                clickCount = 0;
+                showStatus('End point set. Click "Find Safe Routes" to continue.', 'success');
+            }
+        });
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+        
+        async function toggleCrimeHeatmap() {
+            const checkbox = document.getElementById('showCrimeHeatmap');
+            
+            if (checkbox.checked) {
+                try {
+                    showStatus('Loading crime data...', 'info');
+                    const response = await fetch(`${BACKEND_URL}/api/crime-heatmap`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Remove existing heatmap if present
+                        if (crimeHeatLayer) {
+                            map.removeLayer(crimeHeatLayer);
+                        }
+                        
+                        // Create crime heatmap
+                        crimeHeatLayer = L.heatLayer(data.data, {
+                            radius: 25,
+                            blur: 30,
+                            maxZoom: 17,
+                            max: 2.0,
+                            minOpacity: 0.4,
+                            gradient: {
+                                0.0: 'green',
+                                0.3: 'lime',
+                                0.5: 'yellow',
+                                0.7: 'orange',
+                                1.0: 'red'
+                            }
+                        }).addTo(map);
+                        
+                        showStatus(`Loaded ${data.total_crimes} crime incidents`, 'success');
+                    }
+                } catch (error) {
+                    showStatus('Error loading crime heatmap', 'error');
+                    console.error(error);
+                    checkbox.checked = false;
+                }
+            } else {
+                if (crimeHeatLayer) {
+                    map.removeLayer(crimeHeatLayer);
+                    crimeHeatLayer = null;
+                }
+            }
+        }
+        
+        async function toggleLightingHeatmap() {
+            const checkbox = document.getElementById('showLightingHeatmap');
+            
+            if (checkbox.checked) {
+                try {
+                    showStatus('Loading lighting data...', 'info');
+                    const response = await fetch(`${BACKEND_URL}/api/lighting-heatmap`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Remove existing heatmap if present
+                        if (lightingHeatLayer) {
+                            map.removeLayer(lightingHeatLayer);
+                        }
+                        
+                        // Create lighting heatmap with weight from lighting_score
+                        const lightingPoints = data.data.map(point => [point[0], point[1], point[2]/10]);
+                        lightingHeatLayer = L.heatLayer(lightingPoints, {
+                            radius: 25,
+                            blur: 30,
+                            maxZoom: 17,
+                            max: 1.0,
+                            minOpacity: 0.3,
+                            gradient: {
+                                0.0: 'blue',
+                                0.5: 'lightblue',
+                                1.0: 'yellow'
+                            }
+                        }).addTo(map);
+                        
+                        showStatus(`Loaded ${data.total_locations} lighting points`, 'success');
+                    }
+                } catch (error) {
+                    showStatus('Error loading lighting heatmap', 'error');
+                    console.error(error);
+                    checkbox.checked = false;
+                }
+            } else {
+                if (lightingHeatLayer) {
+                    map.removeLayer(lightingHeatLayer);
+                    lightingHeatLayer = null;
+                }
+            }
+        }
+        
+        async function togglePopulationHeatmap() {
+            const checkbox = document.getElementById('showPopulationHeatmap');
+            
+            if (checkbox.checked) {
+                try {
+                    showStatus('Loading population data...', 'info');
+                    const response = await fetch(`${BACKEND_URL}/api/population-heatmap`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Remove existing heatmap if present
+                        if (populationHeatLayer) {
+                            map.removeLayer(populationHeatLayer);
+                        }
+                        
+                        // Create population heatmap with weight from population_density
+                        const popPoints = data.data.map(point => [point[0], point[1], point[2]/30000]);
+                        populationHeatLayer = L.heatLayer(popPoints, {
+                            radius: 25,
+                            blur: 30,
+                            maxZoom: 17,
+                            max: 1.0,
+                            minOpacity: 0.3,
+                            gradient: {
+                                0.0: 'magenta',
+                                0.5: 'purple',
+                                1.0: 'cyan'
+                            }
+                        }).addTo(map);
+                        
+                        showStatus(`Loaded ${data.total_locations} population points`, 'success');
+                    }
+                } catch (error) {
+                    showStatus('Error loading population heatmap', 'error');
+                    console.error(error);
+                    checkbox.checked = false;
+                }
+            } else {
+                if (populationHeatLayer) {
+                    map.removeLayer(populationHeatLayer);
+                    populationHeatLayer = null;
+                }
+            }
+        }
+        
+        async function useCurrentLocation() {
+            try {
+                showStatus('Getting your location...', 'info');
+                document.getElementById('currentLocationBtn').disabled = true;
+                
+                if (!navigator.geolocation) {
+                    showStatus('Geolocation is not supported by your browser', 'error');
+                    document.getElementById('currentLocationBtn').disabled = false;
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude.toFixed(4);
+                        const lon = position.coords.longitude.toFixed(4);
+                        
+                        // Set as start point if not already set
+                        if (!document.getElementById('startLat').value) {
+                            document.getElementById('startLat').value = lat;
+                            document.getElementById('startLon').value = lon;
+                            
+                            if (startMarker) map.removeLayer(startMarker);
+                            startMarker = L.marker([lat, lon], {
+                                icon: L.icon({
+                                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                    iconSize: [25, 41],
+                                    iconAnchor: [12, 41],
+                                    popupAnchor: [1, -34]
+                                })
+                            }).addTo(map).bindPopup('Start Point (Your Location)').openPopup();
+                            
+                            map.setView([lat, lon], 14);
+                            showStatus('Current location set as start point!', 'success');
+                        } else if (!document.getElementById('endLat').value) {
+                            // Set as end point if start is already set
+                            document.getElementById('endLat').value = lat;
+                            document.getElementById('endLon').value = lon;
+                            
+                            if (endMarker) map.removeLayer(endMarker);
+                            endMarker = L.marker([lat, lon], {
+                                icon: L.icon({
+                                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                    iconSize: [25, 41],
+                                    iconAnchor: [12, 41],
+                                    popupAnchor: [1, -34]
+                                })
+                            }).addTo(map).bindPopup('End Point (Your Location)').openPopup();
+                            
+                            showStatus('Current location set as end point!', 'success');
+                        } else {
+                            // Clear current and add current location marker
+                            if (currentLocationMarker) map.removeLayer(currentLocationMarker);
+                            currentLocationMarker = L.marker([lat, lon], {
+                                icon: L.icon({
+                                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+                                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                    iconSize: [25, 41],
+                                    iconAnchor: [12, 41],
+                                    popupAnchor: [1, -34]
+                                })
+                            }).addTo(map).bindPopup('Your Current Location').openPopup();
+                            
+                            map.setView([lat, lon], 14);
+                            showStatus('Your location is marked on the map!', 'success');
+                        }
+                        
+                        document.getElementById('currentLocationBtn').disabled = false;
+                    },
+                    function(error) {
+                        let errorMessage = 'Error getting location: ';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += 'Permission denied';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Position unavailable';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'Request timeout';
+                                break;
+                            default:
+                                errorMessage += 'Unknown error';
+                                break;
+                        }
+                        showStatus(errorMessage, 'error');
+                        document.getElementById('currentLocationBtn').disabled = false;
+                    }
+                );
+            } catch (error) {
+                showStatus('Error accessing geolocation', 'error');
+                console.error(error);
+                document.getElementById('currentLocationBtn').disabled = false;
+            }
+        }
+        
+        async function findRoutes() {
+            const startLat = parseFloat(document.getElementById('startLat').value);
+            const startLon = parseFloat(document.getElementById('startLon').value);
+            const endLat = parseFloat(document.getElementById('endLat').value);
+            const endLon = parseFloat(document.getElementById('endLon').value);
+            
+            if (!startLat || !startLon || !endLat || !endLon) {
+                showStatus('Please set both start and end points on the map', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('Finding safe routes...', 'info');
+                document.getElementById('findRoutesBtn').disabled = true;
+                
+                // Get preferences
+                const preferMainRoads = document.getElementById('preferMainRoads').checked;
+                const preferWellLit = document.getElementById('preferWellLit').checked;
+                const preferPopulated = document.getElementById('preferPopulated').checked;
+                
+                const response = await fetch(`${BACKEND_URL}/api/route`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        start_lat: startLat,
+                        start_lon: startLon,
+                        end_lat: endLat,
+                        end_lon: endLon,
+                        prefer_main_roads: preferMainRoads,
+                        prefer_well_lit: preferWellLit,
+                        prefer_populated: preferPopulated
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayRoutes(data.routes);
+                    showStatus(`Found ${data.routes.length} routes. Route 1 is the safest!`, 'success');
+                } else {
+                    showStatus(data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Error finding routes. Check backend connection.', 'error');
+                console.error(error);
+            } finally {
+                document.getElementById('findRoutesBtn').disabled = false;
+            }
+        }
+        
+        function getSafetyRating(score, allScores) {
+            const minScore = Math.min(...allScores);
+            const maxScore = Math.max(...allScores);
+            const range = maxScore - minScore;
+            
+            if (score === minScore) {
+                return { level: 'safest', badge: 'safe', text: 'Safest Route' };
+            } else if (range > 0 && (score - minScore) / range < 0.5) {
+                return { level: 'moderate', badge: 'moderate', text: 'Moderate' };
+            } else {
+                return { level: 'caution', badge: 'caution', text: 'Caution' };
+            }
+        }
+        
+        function displayRoutes(routes) {
+            // Clear existing routes
+            routeLayers.forEach(layer => map.removeLayer(layer));
+            routeLayers = [];
+            
+            const container = document.getElementById('routesContainer');
+            container.innerHTML = '';
+            
+            const colors = ['#0066ff', '#ff6600', '#9900ff', '#00cc66', '#ff00ff'];
+            const allScores = routes.map(r => r.safety_score);
+            
+            routes.forEach((routeData, index) => {
+                const safety = getSafetyRating(routeData.safety_score, allScores);
+                
+                // Draw route on map
+                const polyline = L.polyline(routeData.route, {
+                    color: colors[index],
+                    weight: 5,
+                    opacity: 0.8
+                }).addTo(map);
+                
+                // Add popup to route
+                polyline.bindPopup(`
+                    <strong>Route ${index + 1}</strong><br>
+                    Safety Score: ${routeData.safety_score.toFixed(2)}<br>
+                    ${safety.text}
+                `);
+                
+                routeLayers.push(polyline);
+                
+                // Add route card with staggered animation
+                const card = document.createElement('div');
+                card.className = `route-card ${safety.level}`;
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.innerHTML = `
+                    <div class="route-title">
+                        <span>Route ${index + 1}</span>
+                        <span class="safety-badge badge-${safety.badge}">${safety.text}</span>
+                    </div>
+                    <div class="route-score">
+                        <strong>Safety Score:</strong> ${routeData.safety_score.toFixed(2)}
+                        <span style="font-size: 11px; color: #888;"> (lower is safer)</span>
+                    </div>
+                    <div class="route-score" style="color: ${colors[index]}">
+                        <strong>Route Color:</strong> ━━━━━
+                    </div>
+                    <button onclick="openRatingModal(${index + 1})" class="btn btn-secondary" style="margin-top: 8px; font-size: 13px; padding: 6px;">
+                        Rate This Route
+                    </button>
+                `;
+                
+                card.onclick = (e) => {
+                    // Don't trigger route selection when clicking the rating button
+                    if (e.target.tagName !== 'BUTTON') {
+                        map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+                        polyline.openPopup();
+                        document.querySelectorAll('.route-card').forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                    }
+                };
+                
+                container.appendChild(card);
+            });
+            
+            // Fit map to show all routes
+            if (routeLayers.length > 0) {
+                const group = L.featureGroup(routeLayers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+        
+        function clearAll() {
+            // Clear markers
+            if (startMarker) map.removeLayer(startMarker);
+            if (endMarker) map.removeLayer(endMarker);
+            if (currentLocationMarker) map.removeLayer(currentLocationMarker);
+            startMarker = null;
+            endMarker = null;
+            currentLocationMarker = null;
+            
+            // Clear routes
+            routeLayers.forEach(layer => map.removeLayer(layer));
+            routeLayers = [];
+            
+            // Clear heatmaps
+            if (crimeHeatLayer) map.removeLayer(crimeHeatLayer);
+            if (lightingHeatLayer) map.removeLayer(lightingHeatLayer);
+            if (populationHeatLayer) map.removeLayer(populationHeatLayer);
+            crimeHeatLayer = null;
+            lightingHeatLayer = null;
+            populationHeatLayer = null;
+            
+            // Clear checkbox states
+            document.getElementById('showCrimeHeatmap').checked = false;
+            document.getElementById('showLightingHeatmap').checked = false;
+            document.getElementById('showPopulationHeatmap').checked = false;
+            
+            // Clear inputs
+            document.getElementById('startLat').value = '';
+            document.getElementById('startLon').value = '';
+            document.getElementById('endLat').value = '';
+            document.getElementById('endLon').value = '';
+            
+            // Clear route display
+            document.getElementById('routesContainer').innerHTML = '';
+            
+            // Reset click count
+            clickCount = 0;
+            
+            showStatus('All cleared. Click on map to set new points.', 'info');
+        }
+        
+        // Saved Locations functionality
+        let currentLocationType = null;
+        let currentRouteToRate = null;
+        
+        function loadSavedLocations() {
+            const savedLocations = JSON.parse(localStorage.getItem('savedLocations') || '[]');
+            const container = document.getElementById('savedLocationsList');
+            container.innerHTML = '';
+            
+            savedLocations.forEach((loc, index) => {
+                const item = document.createElement('div');
+                item.className = 'saved-loc-item';
+                item.innerHTML = `
+                    <div>
+                        <div class="saved-loc-name">${loc.type === 'home' ? '🏠' : loc.type === 'work' ? '💼' : '📍'} ${loc.name}</div>
+                        <div class="saved-loc-coords">${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}</div>
+                    </div>
+                `;
+                
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    if (e.target.closest('.saved-loc-item')) {
+                        setLocation(loc.lat, loc.lon);
+                    }
+                };
+                
+                container.appendChild(item);
+            });
+        }
+        
+        function setLocation(lat, lon) {
+            if (currentLocationType === 'start' || !document.getElementById('startLat').value) {
+                document.getElementById('startLat').value = lat.toFixed(4);
+                document.getElementById('startLon').value = lon.toFixed(4);
+                if (startMarker) map.removeLayer(startMarker);
+                startMarker = L.marker([lat, lon], {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34]
+                    })
+                }).addTo(map).bindPopup('Start Point').openPopup();
+                showStatus('Start point set from saved location.', 'success');
+            } else {
+                document.getElementById('endLat').value = lat.toFixed(4);
+                document.getElementById('endLon').value = lon.toFixed(4);
+                if (endMarker) map.removeLayer(endMarker);
+                endMarker = L.marker([lat, lon], {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34]
+                    })
+                }).addTo(map).bindPopup('End Point').openPopup();
+                showStatus('End point set from saved location.', 'success');
+            }
+        }
+        
+        function openSaveLocationModal() {
+            currentLocationType = 'start';
+            const modal = document.getElementById('saveLocationModal');
+            modal.classList.add('active');
+            
+            // Pre-fill if there's a current location
+            const startLat = document.getElementById('startLat').value;
+            const startLon = document.getElementById('startLon').value;
+            if (startLat && startLon) {
+                currentLocationType = 'start';
+            } else {
+                const endLat = document.getElementById('endLat').value;
+                const endLon = document.getElementById('endLon').value;
+                if (endLat && endLon) {
+                    currentLocationType = 'end';
+                }
+            }
+        }
+        
+        function closeSaveLocationModal() {
+            const modal = document.getElementById('saveLocationModal');
+            modal.classList.remove('active');
+            document.getElementById('locationName').value = '';
+        }
+        
+        function saveLocation() {
+            const name = document.getElementById('locationName').value;
+            const type = document.getElementById('locationType').value;
+            const latField = currentLocationType === 'start' ? 'startLat' : 'endLat';
+            const lonField = currentLocationType === 'start' ? 'startLon' : 'endLon';
+            
+            const lat = parseFloat(document.getElementById(latField).value);
+            const lon = parseFloat(document.getElementById(lonField).value);
+            
+            if (!name || !lat || !lon) {
+                alert('Please set a location on the map first and give it a name.');
+                return;
+            }
+            
+            const savedLocations = JSON.parse(localStorage.getItem('savedLocations') || '[]');
+            savedLocations.push({
+                name: name,
+                type: type,
+                lat: lat,
+                lon: lon
+            });
+            
+            localStorage.setItem('savedLocations', JSON.stringify(savedLocations));
+            loadSavedLocations();
+            closeSaveLocationModal();
+            showStatus(`Saved "${name}" as a ${type} location!`, 'success');
+        }
+        
+        // Rating functionality
+        function openRatingModal(routeNumber) {
+            currentRouteToRate = routeNumber;
+            document.getElementById('ratingModal').classList.add('active');
+        }
+        
+        function closeRatingModal() {
+            document.getElementById('ratingModal').classList.remove('active');
+            currentRouteToRate = null;
+            // Reset stars
+            document.querySelectorAll('.star').forEach(star => {
+                star.textContent = '☆';
+                star.classList.remove('active');
+            });
+            document.getElementById('routeFeedback').value = '';
+        }
+        
+        function setRating(rating) {
+            currentRating = rating;
+            const stars = document.querySelectorAll('.star-rating .star');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.textContent = '★';
+                    star.classList.add('active');
+                } else {
+                    star.textContent = '☆';
+                    star.classList.remove('active');
+                }
+            });
+        }
+        
+        let currentRating = 0;
+        
+        async function submitRating() {
+            const feedback = document.getElementById('routeFeedback').value;
+            
+            if (currentRating > 0) {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/rate-route`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            route_id: `route_${currentRouteToRate}`,
+                            rating: currentRating,
+                            feedback: feedback
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        showStatus('Thank you for rating the route!', 'success');
+                    }
+                } catch (error) {
+                    console.error('Error rating route:', error);
+                }
+            }
+            
+            closeRatingModal();
+        }
+        
+        // Theme Toggle Functionality
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update icon
+            const themeIcon = document.getElementById('themeIcon');
+            themeIcon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        }
+        
+        // Initialize theme on page load
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            const themeIcon = document.getElementById('themeIcon');
+            themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        }
+        
+        // Initialize saved locations on page load
+        loadSavedLocations();
+        initTheme();
+    </script>
+</body>
+</html>
