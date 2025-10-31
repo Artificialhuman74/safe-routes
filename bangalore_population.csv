@@ -7,37 +7,37 @@ Latitude,Longitude,population_density,traffic_level,is_main_road,area
 12.9702,77.5988,17200,8,1,Brigade Church Street
 12.9696,77.5982,15800,7,1,Commercial Street
 12.9700,77.5986,16900,8,1,Brigade Metro
-12.9766,77.5993,22000,10,1,Majestic Bus Stand
-12.9771,77.5998,23500,10,1,Majestic Area
-12.9768,77.6001,21800,10,1,Kempegowda Bus Station
-12.9774,77.5995,22700,10,1,Majestic Platform Road
-12.9765,77.5990,21200,9,1,Majestic Metro
-12.9770,77.6003,20500,9,1,Majestic Subway
-12.9772,77.5997,22300,10,1,Majestic Circle
-12.9769,77.5992,21600,10,1,Majestic Bus Terminal
-12.9940,77.5807,16200,7,1,Shivajinagar
-12.9945,77.5812,17500,8,1,Russell Market
-12.9938,77.5804,15800,7,1,Shivajinagar Bus Stand
-12.9943,77.5809,16700,7,1,Siddhartha Layout
-12.9942,77.5815,17100,8,1,Shivajinagar Market
-12.9947,77.5805,16400,7,1,Shivajinagar Main Road
-12.9939,77.5811,15900,7,1,Russell Market Area
-12.9941,77.5808,16800,7,1,Shivajinagar Circle
-12.9748,77.6006,19800,9,1,City Market
-12.9745,77.6010,20500,9,1,KR Market
-12.9750,77.6008,19200,8,1,Krishnarajendra Market
-12.9747,77.6012,20100,9,1,City Market Main Road
-12.9752,77.6005,19500,8,1,KR Market Area
-12.9744,77.6009,18800,8,1,City Market Circle
-12.9749,77.6011,20300,9,1,Avenue Road Market
-12.9746,77.6007,19000,8,1,Chikpet Area
-12.9687,77.5960,14200,6,0,Kalasipalyam
-12.9690,77.5965,15100,6,1,Kalasipalyam Bus Stand
-12.9685,77.5958,13800,5,0,Kalasipalyam Market
-12.9692,77.5963,14600,6,0,Kalasipalyam Main Road
-12.9688,77.5961,14000,5,0,Kalasipalyam Circle
-12.9691,77.5967,15400,6,1,Kalasipalyam Junction
-12.9689,77.5959,13900,5,0,Kalasipalyam Area
+12.9766,77.5993,22500,10,1,Majestic Bus Stand
+12.9771,77.5998,24200,10,1,Majestic Area
+12.9768,77.6001,22000,10,1,Kempegowda Bus Station
+12.9774,77.5995,23100,10,1,Majestic Platform Road
+12.9765,77.5990,21800,9,1,Majestic Metro
+12.9770,77.6003,21200,9,1,Majestic Subway
+12.9772,77.5997,22800,10,1,Majestic Circle
+12.9769,77.5992,22100,10,1,Majestic Bus Terminal
+12.9940,77.5807,17200,7,1,Shivajinagar
+12.9945,77.5812,18500,8,1,Russell Market
+12.9938,77.5804,16800,7,1,Shivajinagar Bus Stand
+12.9943,77.5809,17600,7,1,Siddhartha Layout
+12.9942,77.5815,18100,8,1,Shivajinagar Market
+12.9947,77.5805,17400,7,1,Shivajinagar Main Road
+12.9939,77.5811,16900,7,1,Russell Market Area
+12.9941,77.5808,17800,7,1,Shivajinagar Circle
+12.9748,77.6006,20200,9,1,City Market
+12.9745,77.6010,21000,9,1,KR Market
+12.9750,77.6008,19600,8,1,Krishnarajendra Market
+12.9747,77.6012,20500,9,1,City Market Main Road
+12.9752,77.6005,19900,8,1,KR Market Area
+12.9744,77.6009,19200,8,1,City Market Circle
+12.9749,77.6011,20700,9,1,Avenue Road Market
+12.9746,77.6007,19400,8,1,Chikpet Area
+12.9687,77.5960,15100,6,0,Kalasipalyam
+12.9690,77.5965,16200,6,1,Kalasipalyam Bus Stand
+12.9685,77.5958,14700,5,0,Kalasipalyam Market
+12.9692,77.5963,15600,6,0,Kalasipalyam Main Road
+12.9688,77.5961,14900,5,0,Kalasipalyam Circle
+12.9691,77.5967,16500,6,1,Kalasipalyam Junction
+12.9689,77.5959,14800,5,0,Kalasipalyam Area
 12.9986,77.7089,12500,7,1,KR Puram
 12.9990,77.7095,13200,7,1,KR Puram Railway Station
 12.9984,77.7092,12100,6,1,Krishnarajapuram
@@ -46,13 +46,13 @@ Latitude,Longitude,population_density,traffic_level,is_main_road,area
 12.9987,77.7097,10500,5,1,KR Puram Industrial Area
 12.9985,77.7090,13500,7,1,Krishnarajapuram Junction
 12.9989,77.7094,11800,6,1,KR Puram Market
-12.9505,77.5695,11200,5,0,Goripalya
-12.9508,77.5698,11800,5,0,Goripalya Main Road
-12.9503,77.5692,10900,4,0,Goripalya Market
-12.9510,77.5696,11500,5,0,Goripalya Circle
-12.9506,77.5694,11100,4,0,Goripalya Junction
-12.9507,77.5699,12000,5,0,Goripalya Area
-12.9504,77.5697,10800,4,0,Goripalya Main
+12.9505,77.5695,11800,5,0,Goripalya
+12.9508,77.5698,12500,5,0,Goripalya Main Road
+12.9503,77.5692,11400,4,0,Goripalya Market
+12.9510,77.5696,12100,5,0,Goripalya Circle
+12.9506,77.5694,11600,4,0,Goripalya Junction
+12.9507,77.5699,12700,5,0,Goripalya Area
+12.9504,77.5697,11300,4,0,Goripalya Main
 13.0365,77.5978,15800,8,1,Yeshwanthpur
 13.0370,77.5982,16500,9,1,Yeshwanthpur Railway Station
 13.0363,77.5975,15200,8,1,Yeshwanthpur Junction

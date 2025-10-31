@@ -1,0 +1,29 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Environment variables
+.env
+
+# macOS
+.DS_Store
+
+# Editor directories and files
+.vscode/
+*.swp
+
+# Data files (if you want to keep them out of git; comment out if you do want CSVs tracked)
+# *.csv
